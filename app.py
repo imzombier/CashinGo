@@ -112,10 +112,13 @@ TEMPLATE = """
               <a id="upiLink2" href="#" target="_blank"><img src="{{ url_for('static', filename='paytm.png') }}" alt="Paytm"></a>
               <a id="upiLink3" href="#" target="_blank"><img src="{{ url_for('static', filename='gpay.png') }}" alt="GPay"></a>
               <a id="upiLink4" href="#" target="_blank"><img src="{{ url_for('static', filename='bhim.png') }}" alt="BHIM"></a>
-            </div>
+            </div><br>
 
-            <div class="qr-wrapper">
-              <div id="qrContainer" class="text-center"></div>
+            <div class="text-center">
+                <p class="mb-1">📷 Scan QR Code</p><br>
+                <div class="qr-wrapper">
+                    <div id="qrContainer"></div>
+                 </div>
             </div>
           </div>
 
