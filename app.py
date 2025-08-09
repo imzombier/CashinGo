@@ -61,7 +61,7 @@ TEMPLATE = """
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>VenusPay</title>
+  <title>CashinGo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -83,7 +83,7 @@ TEMPLATE = """
 <div class="container">
   <div class="card p-3">
     <div class="admin-header mb-2">
-      <h4 class="mb-0">💳 VenusPay</h4>
+      <h4 class="mb-0">💳 CashinGo</h4>
       <div>
         <a href="/admin" class="btn btn-outline-dark btn-sm">Admin</a>
       </div>
@@ -269,7 +269,7 @@ def admin():
 
     return render_template_string("""
     <!doctype html><html><head>
-    <meta charset="utf-8"><title>Admin - VenusPay</title>
+    <meta charset="utf-8"><title>Admin - CashinGo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>body{background:#f6f8fb;padding:20px}</style></head><body>
     <div class="container">
