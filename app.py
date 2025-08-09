@@ -2,20 +2,22 @@ from flask import Flask, render_template_string, request, url_for, redirect, ses
 import os, sqlite3, time
 from werkzeug.utils import secure_filename
 from pathlib import Path
+import requests
+import threading
 
 # ---------------- Config ----------------
 APP_ROOT = Path(__file__).parent
 UPLOAD_FOLDER = APP_ROOT / "uploads"
 STATIC_FOLDER = APP_ROOT / "static"
 DB_FILE = APP_ROOT / "data.db"
-ADMIN_PASSWORD = os.environ.get("VENUSPAY_ADMIN_PW", "admin123")  # change via env var in production
+ADMIN_PASSWORD = os.environ.get("CashinGo_ADMIN_PW", "admin123")  # change via env var in production
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(STATIC_FOLDER, exist_ok=True)
 
 app = Flask(__name__, static_folder=str(STATIC_FOLDER), static_url_path="/static")
 app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
-app.secret_key = os.environ.get("VENUSPAY_SECRET", "venus_secret_key")  # change in production
+app.secret_key = os.environ.get("CashinGo_SECRET", "venus_secret_key")  # change in production
 
 # ---------------- DB utils ----------------
 def get_conn():
@@ -124,18 +126,6 @@ TEMPLATE = """
 
           <button type="submit" class="btn btn-success w-100">✅ Submit Payment</button>
         </form>
-      </div>
-
-      <div class="col-lg-6">
-        <div class="p-3 border rounded bg-white">
-          <h6>Payment Summary</h6>
-          <p class="mb-1"><strong>Loan:</strong> {{ settings.loan_number }}</p>
-          <p class="mb-1"><strong>Receiver:</strong> {{ settings.receiver_name }}</p>
-          <p class="mb-1"><strong>UPI ID:</strong> <span class="muted">{{ settings.upi_id }}</span></p>
-          <p class="mb-0"><strong>Default EMI:</strong> ₹{{ "%.2f"|format(settings.emi_amount) }}</p>
-          <hr>
-          <p class="small text-muted">Select screenshot after paying via app/scan. Admin will review and mark payment as approved.</p>
-        </div>
       </div>
     </div>
     {% else %}
@@ -387,5 +377,20 @@ def pending_count():
     conn.close()
     return jsonify({"pending": cnt})
 
+def keep_alive():
+    url = os.environ.get("RENDER_URL")
+    if not url:
+        raise ValueError("RENDER_URL environment variable is missing! Set it before running the script.")
+
+    while True:
+        try:
+            response = requests.get(url)
+            print(f"Keep-alive ping sent! Status: {response.status_code}")
+        except Exception as e:
+            print(f"Keep-alive request failed: {e}")
+        time.sleep(49)
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    threading.Thread(target=keep_alive, daemon=True).start()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
