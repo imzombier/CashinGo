@@ -107,16 +107,18 @@ TEMPLATE = """
               <button type="button" class="btn btn-outline-primary" id="showUpi">UPI Payment</button>
               <button type="button" class="btn btn-outline-secondary" id="showQr">QR Payment</button>
             </div>
-            <br><br>
+            
 
             <!-- UPI Apps Section -->
             <div id="upiSection" style="display:none;">
+            <br><br>
               <div class="upi-logos mb-3">
                 <a id="upiLink" href="#" target="_blank"><img src="{{ url_for('static', filename='phonepe.png') }}" alt="PhonePe"></a>
                 <a id="upiLink2" href="#" target="_blank"><img src="{{ url_for('static', filename='paytm.png') }}" alt="Paytm"></a>
                 <a id="upiLink3" href="#" target="_blank"><img src="{{ url_for('static', filename='gpay.png') }}" alt="GPay"></a>
                 <a id="upiLink4" href="#" target="_blank"><img src="{{ url_for('static', filename='bhim.png') }}" alt="BHIM"></a>
               </div>
+            <br><br>
             </div>
 
             <!-- QR Code Section -->
@@ -129,7 +131,7 @@ TEMPLATE = """
               </div>
             </div>
           </div>
-          <br><br>
+          
 
           <div class="mb-3">
             <label class="form-label">🖼 Upload Screenshot (required)</label>
