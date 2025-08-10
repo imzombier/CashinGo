@@ -46,7 +46,6 @@ def init_db():
             created_at INTEGER
         )
     """)
-    # insert default settings if empty
     row = c.execute("SELECT COUNT(*) as cnt FROM settings").fetchone()
     if row['cnt'] == 0:
         c.execute("INSERT INTO settings (upi_id, receiver_name, loan_number, emi_amount) VALUES (?,?,?,?)",
@@ -57,7 +56,6 @@ def init_db():
 init_db()
 
 # ---------------- HTML template ----------------
-# NOTE: using render_template_string for single-file convenience.
 TEMPLATE = """
 <!doctype html>
 <html lang="en">
@@ -71,14 +69,12 @@ TEMPLATE = """
     body { background: #f0f2f5; padding-bottom: 80px; }
     .card { margin-top: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-radius: 15px; }
     .upi-logos { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
-    .upi-logos img { height: 42px; object-fit: contain; box-shadow: 0px 6px 12px rgba(0,0,0,0.18); border-radius: 8px; background:white; padding:6px; transition: transform .14s; }
+    .upi-logos img { height: 60px; object-fit: contain; box-shadow: 0px 6px 12px rgba(0,0,0,0.18); border-radius: 8px; background:white; padding:6px; transition: transform .14s; }
     .upi-logos img:hover{ transform: scale(1.06); }
     #qrContainer { padding: 12px; border: 3px solid #000; border-radius: 10px; background:white; }
     .qr-wrapper { display:flex; justify-content:center; align-items:center; margin-top:8px; }
     .pending-badge { background:#ffc107; color:#000; padding:.25rem .55rem; border-radius:999px; font-weight:600; }
     .admin-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
-    .small-img { max-width:160px; }
-    .muted { color:#6c757d; }
   </style>
 </head>
 <body>
@@ -106,21 +102,34 @@ TEMPLATE = """
           </div>
 
           <div class="mb-3">
-            <label class="form-label">📲 Pay via UPI</label>
-            <div class="upi-logos" aria-hidden="true">
-              <a id="upiLink" href="#" target="_blank"><img src="{{ url_for('static', filename='phonepe.png') }}" alt="PhonePe"></a>
-              <a id="upiLink2" href="#" target="_blank"><img src="{{ url_for('static', filename='paytm.png') }}" alt="Paytm"></a>
-              <a id="upiLink3" href="#" target="_blank"><img src="{{ url_for('static', filename='gpay.png') }}" alt="GPay"></a>
-              <a id="upiLink4" href="#" target="_blank"><img src="{{ url_for('static', filename='bhim.png') }}" alt="BHIM"></a>
-            </div><br>
+            <label class="form-label">💳 Choose Payment Method</label>
+            <div class="btn-group w-100 mb-3" role="group">
+              <button type="button" class="btn btn-outline-primary" id="showUpi">UPI Payment</button>
+              <button type="button" class="btn btn-outline-secondary" id="showQr">QR Payment</button>
+            </div>
+            <br><br>
 
-            <div class="text-center">
-                <p class="mb-1">📷 Scan QR Code</p><br>
+            <!-- UPI Apps Section -->
+            <div id="upiSection" style="display:none;">
+              <div class="upi-logos mb-3">
+                <a id="upiLink" href="#" target="_blank"><img src="{{ url_for('static', filename='phonepe.png') }}" alt="PhonePe"></a>
+                <a id="upiLink2" href="#" target="_blank"><img src="{{ url_for('static', filename='paytm.png') }}" alt="Paytm"></a>
+                <a id="upiLink3" href="#" target="_blank"><img src="{{ url_for('static', filename='gpay.png') }}" alt="GPay"></a>
+                <a id="upiLink4" href="#" target="_blank"><img src="{{ url_for('static', filename='bhim.png') }}" alt="BHIM"></a>
+              </div>
+            </div>
+
+            <!-- QR Code Section -->
+            <div id="qrSection" style="display:none;">
+              <div class="text-center">
+                <p class="mb-1">📷 Scan QR Code</p>
                 <div class="qr-wrapper">
-                    <div id="qrContainer"></div>
-                 </div>
+                  <div id="qrContainer"></div>
+                </div>
+              </div>
             </div>
           </div>
+          <br><br>
 
           <div class="mb-3">
             <label class="form-label">🖼 Upload Screenshot (required)</label>
@@ -135,6 +144,15 @@ TEMPLATE = """
       <div class="alert alert-info">✅ All EMIs are paid. No dues now.</div>
     {% endif %}
   </div>
+  <div class="text-center mt-4" style="font-size:14px; color:#555;">
+  CashinGo Gateway Was Developed By 
+  <strong>
+    <a href="mailto:kona.krishna1997@gmail.com" style="text-decoration:none; color:#000;">
+      Krishna Naidu
+    </a>
+  </strong>
+</div>
+
 </div>
 
 <script>
@@ -150,6 +168,16 @@ TEMPLATE = """
   const upi_id = "{{ settings.upi_id }}";
   const receiver = "{{ settings.receiver_name }}";
   const loan_number = "{{ settings.loan_number }}";
+
+  // Show/hide sections
+  document.getElementById("showUpi").addEventListener("click", function(){
+    document.getElementById("upiSection").style.display = "block";
+    document.getElementById("qrSection").style.display = "none";
+  });
+  document.getElementById("showQr").addEventListener("click", function(){
+    document.getElementById("upiSection").style.display = "none";
+    document.getElementById("qrSection").style.display = "block";
+  });
 
   function generateQR(amt){
     const upi_url = `upi://pay?pa=${encodeURIComponent(upi_id)}&pn=${encodeURIComponent(receiver)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent('Loan EMI - ' + loan_number)}`;
@@ -196,7 +224,6 @@ def index():
             filename = secure_filename(f"{int(time.time())}_{screenshot.filename}")
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             screenshot.save(filepath)
-            # save payment record
             conn.execute("INSERT INTO payments (amount, screenshot, status, created_at) VALUES (?,?,?,?)",
                          (amount, filename, "Pending", int(time.time())))
             conn.commit()
@@ -204,12 +231,10 @@ def index():
     conn.close()
     return render_template_string(TEMPLATE, settings=settings, success=success, emi_due=True)
 
-# serve uploads
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     return app.send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# ---------------- Admin ----------------
 @app.route("/admin/login", methods=["GET","POST"])
 def admin_login():
     if request.method == "POST":
@@ -218,9 +243,7 @@ def admin_login():
             session["admin_logged"] = True
             return redirect("/admin")
         else:
-            return render_template_string("""
-                <div style="padding:30px"><h4>Login failed</h4><a href="/admin/login">Back</a></div>
-            """)
+            return render_template_string("<div style='padding:30px'><h4>Login failed</h4><a href='/admin/login'>Back</a></div>")
     return render_template_string("""
         <div style="max-width:420px;margin:80px auto;padding:20px;border-radius:8px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
           <h4>Admin Login</h4>
@@ -242,7 +265,6 @@ def admin():
         return redirect("/admin/login")
     conn = get_conn()
     if request.method == "POST":
-        # update settings
         upi = request.form.get("upi_id","").strip()
         rec = request.form.get("receiver_name","").strip()
         loan = request.form.get("loan_number","").strip()
@@ -334,7 +356,6 @@ def admin():
     </body></html>
     """, settings=dict(settings_row), payments=payments, pending_count=pending_count)
 
-# helpers for template: timestamp formatting
 @app.template_filter('timestamp_to_string')
 def timestamp_to_string_filter(ts):
     try:
@@ -342,7 +363,6 @@ def timestamp_to_string_filter(ts):
     except:
         return "-"
 
-# Approve payment
 @app.route("/admin/approve/<int:pid>")
 def approve_payment(pid):
     if not session.get("admin_logged"):
@@ -353,7 +373,6 @@ def approve_payment(pid):
     conn.close()
     return redirect("/admin")
 
-# Delete payment
 @app.route("/admin/delete/<int:pid>")
 def delete_payment(pid):
     if not session.get("admin_logged"):
@@ -370,7 +389,6 @@ def delete_payment(pid):
     conn.close()
     return redirect("/admin")
 
-# endpoint to return pending count (useful for polling)
 @app.route("/admin/pending_count")
 def pending_count():
     if not session.get("admin_logged"):
@@ -384,7 +402,6 @@ def keep_alive():
     url = os.environ.get("RENDER_URL")
     if not url:
         raise ValueError("RENDER_URL environment variable is missing! Set it before running the script.")
-
     while True:
         try:
             response = requests.get(url)
