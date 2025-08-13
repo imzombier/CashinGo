@@ -46,6 +46,17 @@ def init_db():
             created_at INTEGER
         )
     """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        mobile TEXT,
+        amount REAL,
+        screenshot TEXT,
+        status TEXT DEFAULT 'Pending',
+        created_at INTEGER
+         )
+    """)
     row = c.execute("SELECT COUNT(*) as cnt FROM settings").fetchone()
     if row['cnt'] == 0:
         c.execute("INSERT INTO settings (upi_id, receiver_name, loan_number, emi_amount) VALUES (?,?,?,?)",
@@ -96,6 +107,16 @@ TEMPLATE = """
     <div class="row">
       <div class="col-lg-6">
         <form method="post" enctype="multipart/form-data" class="mb-3">
+        <div class="mb-3">
+  <label class="form-label">👤 Name</label>
+  <input type="text" name="name" class="form-control" placeholder="Enter your name" required>
+</div>
+
+<div class="mb-3">
+  <label class="form-label">📱 Mobile Number</label>
+  <input type="tel" name="mobile" class="form-control" placeholder="Enter mobile number" pattern="[0-9]{10}" required>
+</div>
+
           <div class="mb-3">
             <label class="form-label">💰 Amount (₹)</label>
             <input type="number" name="amount" id="amountInput" class="form-control" value="{{ settings.emi_amount }}" required min="1" step="0.01">
@@ -159,6 +180,8 @@ TEMPLATE = """
 
 <script>
   const amountInput = document.getElementById("amountInput");
+  const nameInput = document.querySelector('input[name="name"]');
+  const mobileInput = document.querySelector('input[name="mobile"]');
   const qrContainer = document.getElementById("qrContainer");
   const links = [
     document.getElementById("upiLink"),
@@ -169,33 +192,43 @@ TEMPLATE = """
 
   const upi_id = "{{ settings.upi_id }}";
   const receiver = "{{ settings.receiver_name }}";
-  const loan_number = "{{ settings.loan_number }}";
 
   // Show/hide sections
   document.getElementById("showUpi").addEventListener("click", function(){
     document.getElementById("upiSection").style.display = "block";
     document.getElementById("qrSection").style.display = "none";
+    generateQR(parseFloat(amountInput.value || {{ settings.emi_amount }}));
   });
   document.getElementById("showQr").addEventListener("click", function(){
     document.getElementById("upiSection").style.display = "none";
     document.getElementById("qrSection").style.display = "block";
+    generateQR(parseFloat(amountInput.value || {{ settings.emi_amount }}));
   });
 
   function generateQR(amt){
-    const upi_url = `upi://pay?pa=${encodeURIComponent(upi_id)}&pn=${encodeURIComponent(receiver)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent('Loan EMI - ' + loan_number)}`;
+    const nameVal = nameInput.value.trim() || "Customer";
+    const mobileVal = mobileInput.value.trim() || "0000000000";
+
+    // Replace Loan EMI - Loan Number with Name - Mobile
+    const upi_url = `upi://pay?pa=${encodeURIComponent(upi_id)}&pn=${encodeURIComponent(receiver)}&am=${amt.toFixed(2)}&cu=INR&tn=${encodeURIComponent(nameVal + ' - ' + mobileVal)}`;
+
     links.forEach(l => l.href = upi_url);
     qrContainer.innerHTML = "";
     new QRCode(qrContainer, { text: upi_url, width: 180, height: 180 });
   }
 
-  // init
-  generateQR(parseFloat(amountInput.value || {{ settings.emi_amount }}));
-
-  amountInput.addEventListener('input', () => {
-    const val = parseFloat(amountInput.value) || 0;
-    if (val > 0) generateQR(val);
+  // Update QR whenever inputs change
+  [amountInput, nameInput, mobileInput].forEach(el => {
+    el.addEventListener('input', () => {
+      const val = parseFloat(amountInput.value) || 0;
+      if (val > 0) generateQR(val);
+    });
   });
+
+  // Initial QR generation
+  generateQR(parseFloat(amountInput.value || {{ settings.emi_amount }}));
 </script>
+
 </body>
 </html>
 """
